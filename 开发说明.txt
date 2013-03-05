@@ -1,0 +1,62 @@
+
+
+
+基于 Python2.7 + PyQt
+
+
+	
+	
+http://www.webppd.com/viewthread.php?tid=5023&highlight=chm
+axure生成的chm文件，左侧目录为乱码，对于有些人来说，可能不适应。
+网上查了是什么原因，以及手动的解决方案，就用vbs实现了一下。
+
+在桌面创建一个后缀为.vbs的文本文件，将以下代码粘贴上，第2，3，4行是hhc文件的路径设置、生成路径及文件名的设置，要根据自己的实际情况修改。
+每次使用axure生成chm文件后，双击vbs文件运行这个vbs，就ok了
+代码如下（全部开源，不用含担心木马）：
+
+Dim strHHCEXE, strWorkPath, strFileName
+strHHCEXE = "C:\Program Files\HTML Help Workshop\hhc.exe"
+strWorkPath = "D:\server\APMServ5.2.0\www\htdocs\protype\t\"
+strFileName = "111120a"
+Dim strHHCFile, strHHPFile, strCompileCmd
+strHHCFile = strWorkPath+"Table of Contents.hhc"
+strHHPFile = strWorkPath+strFileName+".hhp"
+strCompileCmd = """"+strHHCEXE+"""  """+strWorkPath+strFileName+".hhp"""
+
+'将hhc从unicode转换为Ansi
+U8ToAnsi(strHHCFile)
+
+'将hhp文件中的0x409(英文),改为0x804(中文)
+Dim fso, f, ts, strContent
+Set fso = CreateObject("Scripting.FileSystemObject")
+Set f = fso.GetFile(strHHPFile)
+Set ts = f.OpenAsTextStream(1, 0)
+strContent = ts.ReadAll
+ts.close
+strContent = Replace(strContent,"=0x409","=0x804")
+Set ts = f.OpenAsTextStream(2, 0)
+ts.write strContent
+ts.close
+
+'重新编译chm文件
+Set WshShell =CreateObject("WScript.Shell")
+WshShell.Run strCompileCmd
+
+function U8ToAnsi(strFile)
+    dim ADOStrm
+    dim s
+    Set ADOStrm = CreateObject("ADODB.Stream")
+    ADOStrm.Type = 2
+    ADOStrm.Mode = 3
+    ADOStrm.CharSet = "utf-8"
+    ADOStrm.Open
+    ADOStrm.LoadFromFile strFile
+    s = ADOStrm.ReadText
+    ADOStrm.Position = 0
+    ADOStrm.CharSet = "gbk"
+    ADOStrm.WriteText s
+    ADOStrm.SetEOS
+    ADOStrm.SaveToFile strFile, 2
+    ADOStrm.Close
+    Set ADOStrm = Nothing
+end function
